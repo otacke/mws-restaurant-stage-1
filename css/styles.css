@@ -281,6 +281,9 @@ nav h1 a {
   margin: 0.6em 0;
   text-transform: uppercase;
   line-height: 1.2;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 #restaurant-img {
   width: 100%;
