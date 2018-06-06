@@ -353,7 +353,7 @@ nav h1 a {
   margin-bottom: 0.6em;
 	display: flex;
 	flex-direction: column;
-	padding: 0.6em;
+	padding: 1em;
 }
 .review-header {
 	width: 100%;
