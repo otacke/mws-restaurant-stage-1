@@ -207,7 +207,6 @@ nav h1 a {
   border: 0.1em solid #ccc;
   font-family: Arial, sans-serif;
   margin: 0.4em;
-  min-height: 380px;
   padding: 1.2em;
   text-align: left;
   width: 100%;
@@ -240,11 +239,12 @@ nav h1 a {
   color: #fff;
   display: inline-block;
   font-size: 10pt;
-  margin: 0.4em 0 0;
+  margin: 1em auto 0;
   padding: 0.3em 0.9em;
   text-align: center;
   text-decoration: none;
   text-transform: uppercase;
+	width: 16em;
 }
 
 #restaurants-list li a:focus {
