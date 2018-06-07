@@ -21,8 +21,7 @@ fetchNeighborhoods = () => {
   DBHelper.fetchNeighborhoods((error, neighborhoods) => {
     if (error) { // Got an error
       console.error(error);
-    }
-    else {
+    } else {
       self.neighborhoods = neighborhoods;
       fillNeighborhoodsHTML();
     }
@@ -49,8 +48,7 @@ fetchCuisines = () => {
   DBHelper.fetchCuisines((error, cuisines) => {
     if (error) { // Got an error!
       console.error(error);
-    }
-    else {
+    } else {
       self.cuisines = cuisines;
       fillCuisinesHTML();
     }
@@ -103,8 +101,7 @@ updateRestaurants = () => {
   DBHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, (error, restaurants) => {
     if (error) { // Got an error!
       console.error(error);
-    }
-    else {
+    } else {
       resetRestaurants(restaurants);
       fillRestaurantsHTML();
     }
@@ -200,9 +197,9 @@ if (navigator.serviceWorker) {
 
 // Set iFrame title of GoogleMap -- good for a11y
 document.onreadystatechange = function () {
-	if (document.readyState === 'complete') {
+  if (document.readyState === 'complete') {
     const map = document.getElementById('map');
     const mapFrame = map.querySelector('iframe');
     mapFrame.setAttribute('title', 'GoogleMap');
-	}
+  }
 };
