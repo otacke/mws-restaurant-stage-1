@@ -1,0 +1,20 @@
+{
+  "short_name": "Restaurants",
+  "name": "Restaurants",
+  "icons": [{
+      "src": "/img/icon_192w.webp",
+      "type": "image/webp",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/img/icon_512w.webp",
+      "type": "image/webp",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#fff",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#3397DB"
+}
