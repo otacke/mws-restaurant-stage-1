@@ -1,8 +1,9 @@
-/* global google */
+/* global google, idb */
 
 /**
  * Common database helper functions.
  *
+ * Uses idb.
  * @see https://github.com/jakearchibald/idb
  */
 class DBHelper {
@@ -11,34 +12,120 @@ class DBHelper {
    * Database URL.
    * Change this to restaurants.json file location on your server.
    */
-  static get DATABASE_URL() {
+  static get DATABASE_URL () {
     const port = 1337; // Change this to your server port
     return `http://localhost:${port}/restaurants`;
   }
 
+  // Database name.
+  static get DATABASE_NAME () {
+    return 'restaurants-db';
+  }
+
+  /**
+   * Open IndexedDB.
+   *
+   * @return {Promise} Promise for idb.
+   */
+  static databaseOpen () {
+    if (!navigator.serviceWorker) {
+      return Promise.resolve();
+    }
+
+    // Create database if not created yet
+    return idb.open(DBHelper.DATABASE_NAME, 1, upgradeDb => {
+      upgradeDb.createObjectStore(DBHelper.DATABASE_NAME, {keyPath: 'id'});
+    });
+  }
+
+  /**
+   * Insert data into IndexedDB.
+   *
+   * @param {object} data - Data to be inserted.
+   * @return {object} IDBTransaction object.
+   */
+  static databaseInsert (data) {
+    return DBHelper
+      .databaseOpen()
+      .then(db => {
+        // Exit if no database present
+        if (!db) {
+          return;
+        }
+
+        // Insert data
+        const tx = db.transaction(DBHelper.DATABASE_NAME, 'readwrite');
+        const store = tx.objectStore(DBHelper.DATABASE_NAME);
+        data.forEach(restaurant => store.put(restaurant));
+
+        return tx.complete;
+      })
+      .catch(error => console.error(`Could not write to db (${error}).`));
+  }
+
+  /**
+   * Set restaurants in idb.
+   *
+   * @return {Promise} Promise to set restaurants.
+   */
+  static databaseSetRestaurants () {
+    return fetch(DBHelper.DATABASE_URL)
+      .then(response => response.json())
+      .then(restaurants => {
+        DBHelper.databaseInsert(restaurants);
+        return restaurants;
+      });
+  }
+
+  /**
+   * Get restaurants from idb.
+   *
+   * @return {object} Restaurant data.
+   */
+  static databaseGetRestaurants () {
+    return DBHelper
+      .databaseOpen()
+      .then(db => {
+        // Exit if db cannot be opened
+        if (!db) {
+          return;
+        }
+
+        // Get data
+        const store = db
+          .transaction(DBHelper.DATABASE_NAME)
+          .objectStore(DBHelper.DATABASE_NAME);
+        return store.getAll();
+    });
+  }
+
   /**
    * Fetch all restaurants.
+   *
+   * @param {function} callback - Callback function.
    */
-  static fetchRestaurants(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', DBHelper.DATABASE_URL);
-    xhr.onload = () => {
-      if (xhr.status === 200) { // Got a success response from server!
-        const restaurants = JSON.parse(xhr.responseText);
-        restaurants.forEach(restaurant => restaurant.photograph = `${restaurant.photograph}.webp`);
+  static fetchRestaurants (callback) {
+    return DBHelper
+      .databaseGetRestaurants()
+      .then(restaurants => (restaurants.length) ?
+        Promise.resolve(restaurants) :
+        DBHelper.databaseSetRestaurants()
+      )
+      .then(restaurants => {
         callback(null, restaurants);
-      } else { // Oops!. Got an error from server.
-        const error = (`Request failed. Returned status of ${xhr.status}`);
+      })
+      .catch(error => {
         callback(error, null);
-      }
-    };
-    xhr.send();
+      });
   }
 
   /**
    * Fetch a restaurant by its ID.
+   *
+   * @param {number} id - Restaurant ID.
+   * @param {function} callback - Callback function.
    */
-  static fetchRestaurantById(id, callback) {
+  static fetchRestaurantById (id, callback) {
     // fetch all restaurants with proper error handling.
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -56,8 +143,11 @@ class DBHelper {
 
   /**
    * Fetch restaurants by a cuisine type with proper error handling.
+   *
+   * @param {string} cuisine - Restaurant type.
+   * @param {function} callback - Callback function.
    */
-  static fetchRestaurantByCuisine(cuisine, callback) {
+  static fetchRestaurantByCuisine (cuisine, callback) {
     // Fetch all restaurants  with proper error handling
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -72,8 +162,11 @@ class DBHelper {
 
   /**
    * Fetch restaurants by a neighborhood with proper error handling.
+   *
+   * @param {string} neighborhood - Restaurant location.
+   * @param {function} callback - Callback function.
    */
-  static fetchRestaurantByNeighborhood(neighborhood, callback) {
+  static fetchRestaurantByNeighborhood (neighborhood, callback) {
     // Fetch all restaurants
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -88,8 +181,12 @@ class DBHelper {
 
   /**
    * Fetch restaurants by a cuisine and a neighborhood with proper error handling.
+   *
+   * @param {string} cuisine - Restaurant type.
+   * @param {string} neighborhood - Restaurant location.
+   * @param {function} callback - Callback function.
    */
-  static fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, callback) {
+  static fetchRestaurantByCuisineAndNeighborhood (cuisine, neighborhood, callback) {
     // Fetch all restaurants
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -109,8 +206,10 @@ class DBHelper {
 
   /**
    * Fetch all neighborhoods with proper error handling.
+   *
+   * @param {function} callback - Callback function.
    */
-  static fetchNeighborhoods(callback) {
+  static fetchNeighborhoods (callback) {
     // Fetch all restaurants
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -127,8 +226,10 @@ class DBHelper {
 
   /**
    * Fetch all cuisines with proper error handling.
+   *
+   * @param {function} callback - Callback function.
    */
-  static fetchCuisines(callback) {
+  static fetchCuisines (callback) {
     // Fetch all restaurants
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
@@ -145,22 +246,32 @@ class DBHelper {
 
   /**
    * Restaurant page URL.
+   *
+   * @param {number} id - Restaurant ID.
+   * @return {object} Restaurant URL.
    */
-  static urlForRestaurant(restaurant) {
+  static urlForRestaurant (restaurant) {
     return (`./restaurant.html?id=${restaurant.id}`);
   }
 
   /**
    * Restaurant image URL.
+   *
+   * @param {string} restaurant - Restaurant photo name.
+   * @return {object} Restaurant photo URL.
    */
-  static imageUrlForRestaurant(restaurant) {
-    return (`/img/${restaurant.photograph}`);
+  static imageUrlForRestaurant (restaurant) {
+    return (`/img/${restaurant.photograph}.webp`);
   }
 
   /**
    * Map marker for a restaurant.
+   *
+   * @param {string} restaurant - Restaurant URL.
+   * @param {object} map - GoogleMap.
+   * @return {object} Marker for GoogleMap.
    */
-  static mapMarkerForRestaurant(restaurant, map) {
+  static mapMarkerForRestaurant (restaurant, map) {
     const marker = new google.maps.Marker({
       position: restaurant.latlng,
       title: restaurant.name,

@@ -192,7 +192,8 @@ addMarkersToMap = (restaurants = self.restaurants) => {
 if (navigator.serviceWorker) {
   navigator.serviceWorker
     .register('/sw.js')
-    .then(() => console.log('Service worker has been registered.'));
+    .then(() => console.log('Service worker has been registered.'))
+    .catch(error => console.log(`Could not register service worker (${error}).`));
 }
 
 // Set iFrame title of GoogleMap -- good for a11y
@@ -201,7 +202,7 @@ document.onreadystatechange = () => {
     const map = document.getElementById('map');
     const mapFrame = map.querySelector('iframe');
     if (mapFrame) {
-      mapFrame.setAttribute('title', 'GoogleMap');      
+      mapFrame.setAttribute('title', 'GoogleMap');
     }
   }
 };

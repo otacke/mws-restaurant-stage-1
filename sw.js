@@ -2,9 +2,12 @@
 (function () {
   "use strict";
 
+  // Cache name
+  const CACHE_NAME = 'restaurant-cache';
+
   // Doc: https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage
+  // TODO: This might be constructed dynamically
   const cacheFiles = [
-    '/',
     'img/1.webp', 'img/1_280w.webp', 'img/1_480w.webp',
     'img/2.webp', 'img/2_280w.webp', 'img/2_480w.webp',
     'img/3.webp', 'img/3_280w.webp', 'img/3_480w.webp',
@@ -20,42 +23,68 @@
     'restaurant.html',
     'js/dbhelper.js',
     'js/main.js',
+    'js/idb.js',
     'js/restaurant_info.js',
-    'css/styles.css',
-    'data/restaurants.json'
+    'css/styles.css'
   ];
 
   // Event Listener for service worker install
-  self.addEventListener('install', event => {
+  self.addEventListener('install', event =>
     event.waitUntil(caches
-      .open('restaurant-app-v1')
+      .open(CACHE_NAME)
       .then(cache => cache.addAll(cacheFiles))
-      .catch(error => console.error(`Service worker install failed. (${error})`))
-    );
-  });
+    )
+  );
+
+  // Event Listener for new service worker activation, will delete old caches
+  self.addEventListener('activate', event =>
+    event.waitUntil(caches.keys()
+  		.then(cacheNames => Promise.all(
+        cacheNames
+  				.filter(cacheName => cacheName !== CACHE_NAME)
+  				.map(cacheName => caches.delete(cacheName))
+  		))
+    )
+  );
 
   // Event Listener for fetching data
   self.addEventListener('fetch', event => {
+    const requestUrl = new URL(event.request.url);
+
+    // Prevent Google Maps from bloating the cache!
+    if (requestUrl.origin !== location.origin) {
+      return;
+    }
+
+    // Serve the review pages even if they have not been opened before
+    if (requestUrl.pathname.indexOf('/restaurant.html') !== -1) {
+      event.respondWith(caches.match('/restaurant.html'));
+      return;
+    }
+
+    // Try to serve from cache. Otherwise, fetch and store
     event.respondWith(caches
       .match(event.request)
-      .then(response => {
-		    if (response) {
-			    return response;
-		    } else {
-			    return fetch(event.request)
-            .then(response => {
-				      let responseClone = response.clone();
-				      caches
-                .open('restaurant-app-v1')
-                .then(cache => {
-					        cache.put(event.request, responseClone);
-				        })
-				      return response;
-			      })
-            .catch(error => console.log(`Service worker could not get a file. ${error}`));
-          }
-      })
+      .then(response => response || fetchFromNetwork(event.request))
     );
+
+    /**
+     * Fetch data from network and store in cache
+     *
+     * @param {object} request - Request.
+     * @return {object} Response for fetch request.
+     */
+    function fetchFromNetwork (request) {
+      return fetch(request)
+        .then(response => {
+          let responseClone = response.clone();
+          caches
+            .open(CACHE_NAME)
+            .then(cache => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(error => console.log(`Service worker could not fetch a file. ${error}`));
+    }
   });
 
 }());
