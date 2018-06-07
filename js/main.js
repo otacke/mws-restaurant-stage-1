@@ -196,10 +196,12 @@ if (navigator.serviceWorker) {
 }
 
 // Set iFrame title of GoogleMap -- good for a11y
-document.onreadystatechange = function () {
+document.onreadystatechange = () => {
   if (document.readyState === 'complete') {
     const map = document.getElementById('map');
     const mapFrame = map.querySelector('iframe');
-    mapFrame.setAttribute('title', 'GoogleMap');
+    if (mapFrame) {
+      mapFrame.setAttribute('title', 'GoogleMap');      
+    }
   }
 };
