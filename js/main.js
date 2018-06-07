@@ -197,3 +197,12 @@ if (navigator.serviceWorker) {
     .register('/sw.js')
     .then(() => console.log('Service worker has been registered.'));
 }
+
+// Set iFrame title of GoogleMap -- good for a11y
+document.onreadystatechange = function () {
+	if (document.readyState === 'complete') {
+    const map = document.getElementById('map');
+    const mapFrame = map.querySelector('iframe');
+    mapFrame.setAttribute('title', 'GoogleMap');
+	}
+};
