@@ -3,7 +3,6 @@
   "use strict";
 
   // Doc: https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage
-
   const cacheFiles = [
     '/',
     'img/1.webp', 'img/1_280w.webp', 'img/1_480w.webp',
@@ -57,6 +56,6 @@
           }
       })
     );
-});
+  });
 
 }());

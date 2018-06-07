@@ -2,6 +2,8 @@
 
 /**
  * Common database helper functions.
+ *
+ * @see https://github.com/jakearchibald/idb
  */
 class DBHelper {
 
