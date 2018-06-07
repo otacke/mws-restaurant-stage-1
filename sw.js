@@ -22,10 +22,10 @@
     'index.html',
     'restaurant.html',
     'js/dbhelper.js',
-    'js/main.js',
-    'js/idb.js',
-    'js/restaurant_info.js',
-    'css/styles.css'
+    'js/main.min.js',
+    'js/idb.min.js',
+    'js/restaurant_info.min.js',
+    'css/styles.min.css'
   ];
 
   // Event Listener for service worker install
