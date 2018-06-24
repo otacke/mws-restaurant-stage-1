@@ -59,6 +59,7 @@ class DBHelper {
    * @return {object} IDBTransaction object.
    */
   static databaseInsert (data, dbName) {
+    console.log('INSERT', dbName);
     return DBHelper
       .databaseOpen(dbName)
       .then(db => {
@@ -80,11 +81,11 @@ class DBHelper {
   /**
    * Set restaurants in idb.
    *
-   * @param {string} dbName - Database name.
+   * @param {string} dbURL - Database name.
    * @return {Promise} Promise to set restaurants.
    */
-  static databaseSet (dbName) {
-    return fetch(dbName)
+  static databaseSet (dbURL, dbName) {
+    return fetch(dbURL)
       .then(response => response.json())
       .then(items => {
         DBHelper.databaseInsert(items, dbName);
@@ -99,6 +100,7 @@ class DBHelper {
    * @return {object} Restaurant data.
    */
   static databaseGet (dbName) {
+    console.log('GET', dbName);
     return DBHelper
       .databaseOpen(dbName)
       .then(db => {
@@ -125,7 +127,7 @@ class DBHelper {
       .databaseGet(DBHelper.DATABASE_NAME_RESTAURANTS)
       .then(restaurants => (restaurants.length) ?
         Promise.resolve(restaurants) :
-        DBHelper.databaseSet(DBHelper.DATABASE_URL_RESTAURANTS)
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_RESTAURANTS, DBHelper.DATABASE_NAME_RESTAURANTS)
       )
       .then(restaurants => {
         callback(null, restaurants);
@@ -145,7 +147,7 @@ class DBHelper {
       .databaseGet(DBHelper.DATABASE_NAME_REVIEWS)
       .then(reviews => (reviews.length) ?
         Promise.resolve(reviews) :
-        DBHelper.databaseSet(DBHelper.DATABASE_URL_REVIEWS)
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_REVIEWS, DBHelper.DATABASE_NAME_REVIEWS)
       )
       .then(reviews => {
         callback(null, reviews);
