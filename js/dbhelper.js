@@ -9,32 +9,45 @@
 class DBHelper {
 
   /**
-   * Database URL.
-   * Change this to restaurants.json file location on your server.
+   * Database URL for restaurants.
    */
-  static get DATABASE_URL () {
+  static get DATABASE_URL_RESTAURANTS () {
     const port = 1337; // Change this to your server port
     return `http://localhost:${port}/restaurants`;
   }
 
-  // Database name.
-  static get DATABASE_NAME () {
+  /**
+   * Database URL for reviews..
+   */
+  static get DATABASE_URL_REVIEWS () {
+    const port = 1337; // Change this to your server port
+    return `http://localhost:${port}/reviews`;
+  }
+
+  // Database name for restaurants.
+  static get DATABASE_NAME_RESTAURANTS () {
     return 'restaurants-db';
+  }
+
+  // Database name for restaurants.
+  static get DATABASE_NAME_REVIEWS () {
+    return 'reviews-db';
   }
 
   /**
    * Open IndexedDB.
    *
+   * @param {string} dbName - Database type.
    * @return {Promise} Promise for idb.
    */
-  static databaseOpen () {
+  static databaseOpen (dbName) {
     if (!navigator.serviceWorker) {
       return Promise.resolve();
     }
 
-    // Create database if not created yet
-    return idb.open(DBHelper.DATABASE_NAME, 1, upgradeDb => {
-      upgradeDb.createObjectStore(DBHelper.DATABASE_NAME, {keyPath: 'id'});
+    // Create database for restaurants if not created yet
+    return idb.open(dbName, 1, upgradeDb => {
+      upgradeDb.createObjectStore(dbName, {keyPath: 'id'});
     });
   }
 
@@ -42,11 +55,12 @@ class DBHelper {
    * Insert data into IndexedDB.
    *
    * @param {object} data - Data to be inserted.
+   * @param {string} dbName - Database name.
    * @return {object} IDBTransaction object.
    */
-  static databaseInsert (data) {
+  static databaseInsert (data, dbName) {
     return DBHelper
-      .databaseOpen()
+      .databaseOpen(dbName)
       .then(db => {
         // Exit if no database present
         if (!db) {
@@ -54,9 +68,9 @@ class DBHelper {
         }
 
         // Insert data
-        const tx = db.transaction(DBHelper.DATABASE_NAME, 'readwrite');
-        const store = tx.objectStore(DBHelper.DATABASE_NAME);
-        data.forEach(restaurant => store.put(restaurant));
+        const tx = db.transaction(dbName, 'readwrite');
+        const store = tx.objectStore(dbName);
+        data.forEach(item => store.put(item));
 
         return tx.complete;
       })
@@ -66,25 +80,27 @@ class DBHelper {
   /**
    * Set restaurants in idb.
    *
+   * @param {string} dbName - Database name.
    * @return {Promise} Promise to set restaurants.
    */
-  static databaseSetRestaurants () {
-    return fetch(DBHelper.DATABASE_URL)
+  static databaseSet (dbName) {
+    return fetch(dbName)
       .then(response => response.json())
-      .then(restaurants => {
-        DBHelper.databaseInsert(restaurants);
-        return restaurants;
+      .then(items => {
+        DBHelper.databaseInsert(items, dbName);
+        return items;
       });
   }
 
   /**
    * Get restaurants from idb.
    *
+   * @param {string} dbName - Database name.
    * @return {object} Restaurant data.
    */
-  static databaseGetRestaurants () {
+  static databaseGet (dbName) {
     return DBHelper
-      .databaseOpen()
+      .databaseOpen(dbName)
       .then(db => {
         // Exit if db cannot be opened
         if (!db) {
@@ -93,8 +109,8 @@ class DBHelper {
 
         // Get data
         const store = db
-          .transaction(DBHelper.DATABASE_NAME)
-          .objectStore(DBHelper.DATABASE_NAME);
+          .transaction(dbName)
+          .objectStore(dbName);
         return store.getAll();
     });
   }
@@ -106,13 +122,33 @@ class DBHelper {
    */
   static fetchRestaurants (callback) {
     return DBHelper
-      .databaseGetRestaurants()
+      .databaseGet(DBHelper.DATABASE_NAME_RESTAURANTS)
       .then(restaurants => (restaurants.length) ?
         Promise.resolve(restaurants) :
-        DBHelper.databaseSetRestaurants()
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_RESTAURANTS)
       )
       .then(restaurants => {
         callback(null, restaurants);
+      })
+      .catch(error => {
+        callback(error, null);
+      });
+  }
+
+  /**
+   * Fetch all reviews.
+   *
+   * @param {function} callback - Callback function.
+   */
+  static fetchReviews (callback) {
+    return DBHelper
+      .databaseGet(DBHelper.DATABASE_NAME_REVIEWS)
+      .then(reviews => (reviews.length) ?
+        Promise.resolve(reviews) :
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_REVIEWS)
+      )
+      .then(reviews => {
+        callback(null, reviews);
       })
       .catch(error => {
         callback(error, null);
@@ -137,6 +173,47 @@ class DBHelper {
         } else { // Restaurant does not exist in the database
           callback('Restaurant does not exist', null);
         }
+      }
+    });
+  }
+
+  /**
+   * Fetch a review by its ID.
+   *
+   * @param {number} id - Review ID.
+   * @param {function} callback - Callback function.
+   */
+  static fetchReviewById (id, callback) {
+    // fetch all reviews with proper error handling.
+    DBHelper.fetchReviews((error, reviews) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        const review = reviews.find(r => r.id === parseInt(id));
+        if (review) { // Got the review
+          callback(null, review);
+        } else { // Review does not exist in the database
+          callback('Review does not exist', null);
+        }
+      }
+    });
+  }
+
+  /**
+   * Fetch reviews by a restaurant with proper error handling.
+   *
+   * @param {number} restaurantId - Restaurant ID.
+   * @param {function} callback - Callback function.
+   */
+  static fetchReviewsByRestaurant (restaurantId, callback) {
+    // Fetch all reviews with proper error handling
+    DBHelper.fetchReviews((error, reviews) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        // Filter reviews to have only given restaurantId
+        const results = reviews.filter(r => r.restaurant_id === parseInt(restaurantId));
+        callback(null, results);
       }
     });
   }
