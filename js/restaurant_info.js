@@ -231,17 +231,16 @@ fillOwnReviewHTML = (restaurantId) => {
       comments: strip(this.form.querySelector('#comments').value),
     };
 
-    if (true) {
-      DBHelper
-        .postReview(JSON.stringify(review))
-        .then(result => {
-          this.reviews.push(result);
-          fillReviewsHTML();
-        })
-        .catch(error => {
-          console.error('Could not post review', error);
-        });
-    }
+    DBHelper
+      .postReview(review)
+      .then(result => {
+        console.log(result);
+        this.reviews.push(result);
+        fillReviewsHTML();
+      })
+      .catch(error => {
+        console.error('Could not post review', error);
+      });
 
     this.form.reset();
 

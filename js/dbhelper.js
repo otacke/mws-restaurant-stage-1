@@ -37,26 +37,28 @@ class DBHelper {
   }
 
   // Database name for restaurants.
-  static get DATABASE_NAME_RESTAURANTS () {
-    return 'restaurants-db';
+  static get DBID_RESTAURANTS () {
+    return 'restaurants';
+  }
+
+  // Database name for reviews.
+  static get DBID_REVIEWS () {
+    return 'reviews';
   }
 
   /**
    * Open IndexedDB.
    *
-   * @param {string} dbName - Database type.
+   * @param {string} [dbid] - Database ID.
    * @return {Promise} Promise for idb.
    */
-  static databaseOpen () {
+  static databaseOpen (table = DBHelper.DBID_RESTAURANTS) {
     if (!navigator.serviceWorker) {
       return Promise.resolve();
     }
 
-    // Create database if not created yet
-    return idb.open(DBHelper.DATABASE_NAME_RESTAURANTS, 1, upgradeDb => {
-      upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
-      upgradeDb.createObjectStore('reviews', {keyPath: 'id'});
-      upgradeDb.createObjectStore('reviews_pending', {keyPath: 'id', autoIncrement: true});
+    return idb.open(table, 1, upgradeDb => {
+      const foo = upgradeDb.createObjectStore(table, {keyPath: 'id'});
     });
   }
 
@@ -69,7 +71,7 @@ class DBHelper {
    */
   static databaseInsert (data, dbTable) {
     return DBHelper
-      .databaseOpen()
+      .databaseOpen(dbTable)
       .then(db => {
         // Exit if no database present
         if (!db) {
@@ -106,11 +108,11 @@ class DBHelper {
    * Get data from idb.
    *
    * @param {string} dbTable - Database table.
-   * @return {object} Restaurant data.
+   * @return {object} Data.
    */
   static databaseGet (dbTable) {
     return DBHelper
-      .databaseOpen()
+      .databaseOpen(dbTable)
       .then(db => {
         // Exit if db cannot be opened
         if (!db) {
@@ -122,7 +124,9 @@ class DBHelper {
           .transaction(dbTable)
           .objectStore(dbTable);
         return store.getAll();
-    });
+      }).then(data => {
+        return data;
+      });
   }
 
   /**
@@ -132,10 +136,10 @@ class DBHelper {
    */
   static fetchRestaurants (callback) {
     return DBHelper
-      .databaseGet('restaurants')
+      .databaseGet(DBHelper.DBID_RESTAURANTS)
       .then(restaurants => (restaurants.length) ?
         Promise.resolve(restaurants) :
-        DBHelper.databaseSet(DBHelper.DATABASE_URL_RESTAURANTS, 'restaurants')
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_RESTAURANTS, DBHelper.DBID_RESTAURANTS)
       )
       .then(restaurants => {
         callback(null, restaurants);
@@ -152,10 +156,10 @@ class DBHelper {
    */
   static fetchReviews (callback) {
     return DBHelper
-      .databaseGet('reviews')
+      .databaseGet(DBHelper.DBID_REVIEWS)
       .then(reviews => (reviews.length) ?
         Promise.resolve(reviews) :
-        DBHelper.databaseSet(DBHelper.DATABASE_URL_REVIEWS, 'reviews')
+        DBHelper.databaseSet(DBHelper.DATABASE_URL_REVIEWS, DBHelper.DBID_REVIEWS)
       )
       .then(reviews => {
         callback(null, reviews);
@@ -376,14 +380,16 @@ class DBHelper {
    * @return {object} Response, will be completed review data or empty.
    */
   static postReview (review) {
-    return fetch(DBHelper.DATABASE_URL_REVIEWS, {method: 'post', body: review})
-      .then(function (response) {
-        if (response.ok) {
-          return response.json();
-        } else {
-          return [{}];
-        }
-      });
+    // TODO: Add to Database
+    // Store for later if offline
+    return fetch(
+      DBHelper.DATABASE_URL_REVIEWS,
+      {
+        method: 'post',
+        body: JSON.stringify(review),
+        headers: new Headers({'Content-Type': 'application/json'})
+      })
+      .then(response => (response.ok) ? response.json() : [{}]);
   }
 
 }
