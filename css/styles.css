@@ -243,7 +243,7 @@ nav h1 a {
   height: 400px;
   width: 100%;
 }
-#restaurant-name, #review-title {
+#restaurant-name, #review-title, #own-review-title {
   color: #c15200;
   font-family: Arial, sans-serif;
   font-size: 1.7em;
@@ -311,6 +311,14 @@ nav h1 a {
   font-size: 2em;
   font-weight: 300;
   letter-spacing: -0.1em;
+  display: flex;
+  flex-direction: column;
+}
+#review-own {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 #reviews-list {
   margin: 0;
@@ -318,12 +326,30 @@ nav h1 a {
   display: flex;
   flex-direction: column;
 }
-.reviews-item {
+.reviews-item, .reviews-form {
   background-color: #fff;
   margin-bottom: 0.6em;
   display: flex;
   flex-direction: column;
   padding: 1em;
+}
+.reviews-form {
+  display: flex;
+  flex-direction: column;
+}
+.review-form-field {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding-bottom: 0.3em;
+}
+.review-form-label {
+  font-weight: bold;
+  text-align: left;
+  flex: 0 0 6.5em;
+}
+.review-form-item {
+  flex-grow: 8;
 }
 .review-header {
   width: 100%;

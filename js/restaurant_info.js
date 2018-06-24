@@ -49,6 +49,7 @@ fetchRestaurantFromURL = (callback) => {
       if (!reviews) {
         console.error(error);
       }
+      fillOwnReviewHTML(parseInt(id));
       fillReviewsHTML();
     });
   }
@@ -109,13 +110,106 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
   }
 };
 
+fillOwnReviewHTML = (restaurantId) => {
+  const container = document.getElementById('reviews-container');
+  const title = document.createElement('h3');
+  title.innerHTML = 'Your Review';
+  title.id = 'own-review-title';
+  container.appendChild(title);
+
+  const form = document.createElement('form');
+  form.setAttribute('action', DBHelper.DATABASE_URL_REVIEWS);
+  form.setAttribute('method', 'POST');
+  form.classList.add('reviews-form');
+
+  const formRestaurantId = document.createElement('input');
+  formRestaurantId.setAttribute('name', 'restaurant_id');
+  formRestaurantId.setAttribute('type', 'hidden');
+  formRestaurantId.setAttribute('value', restaurantId);
+  form.appendChild(formRestaurantId);
+
+  const timestamp = new Date().getTime();
+  const formCreatedAt = document.createElement('input');
+  formCreatedAt.setAttribute('name', 'createdAt');
+  formCreatedAt.setAttribute('type', 'hidden');
+  formCreatedAt.setAttribute('value', timestamp);
+  form.appendChild(formCreatedAt);
+
+  const formUpdatedAt = document.createElement('input');
+  formUpdatedAt.setAttribute('name', 'updatedAt');
+  formUpdatedAt.setAttribute('type', 'hidden');
+  formUpdatedAt.setAttribute('value', timestamp);
+  form.appendChild(formUpdatedAt);
+
+  const formNameContainer = document.createElement('div');
+  formNameContainer.classList.add('review-form-field');
+
+  const formNameLabel = document.createElement('label');
+  formNameLabel.classList.add('review-form-label');
+  formNameLabel.setAttribute('for', 'name');
+  formNameLabel.innerHTML = 'Name';
+  formNameContainer.appendChild(formNameLabel);
+
+  const formName = document.createElement('input');
+  formName.classList.add('review-form-item');
+  formName.setAttribute('name', 'name');
+  formName.setAttribute('type', 'text');
+  formName.setAttribute('required', 'required');
+  formNameContainer.appendChild(formName);
+
+  const formRatingContainer = document.createElement('div');
+  formRatingContainer.classList.add('review-form-field');
+
+  const formRatingLabel = document.createElement('label');
+  formRatingLabel.classList.add('review-form-label');
+  formRatingLabel.setAttribute('for', 'name');
+  formRatingLabel.innerHTML = 'Rating';
+  formRatingContainer.appendChild(formRatingLabel);
+
+  const formRating = document.createElement('input');
+  formRating.classList.add('review-form-item');
+  formRating.setAttribute('name', 'rating');
+  formRating.setAttribute('type', 'number');
+  formRating.setAttribute('min', 1);
+  formRating.setAttribute('max', 5);
+  formRating.setAttribute('required', 'required');
+  formRatingContainer.appendChild(formRating);
+
+  const formCommentsContainer = document.createElement('div');
+  formCommentsContainer.classList.add('review-form-field');
+
+  const formCommentsLabel = document.createElement('label');
+  formCommentsLabel.classList.add('review-form-label');
+  formCommentsLabel.setAttribute('for', 'name');
+  formCommentsLabel.innerHTML = 'Comments';
+  formCommentsContainer.appendChild(formCommentsLabel);
+
+  const formComments = document.createElement('textarea');
+  formComments.classList.add('review-form-item');
+  formComments.setAttribute('name', 'comments');
+  formComments.setAttribute('rows', 4);
+  formComments.setAttribute('required', 'required');
+  formCommentsContainer.appendChild(formComments);
+
+  const formSubmit = document.createElement('input');
+  formSubmit.setAttribute('type', 'submit');
+  formSubmit.innerHTML = 'Submit Review';
+
+  form.appendChild(formNameContainer);
+  form.appendChild(formRatingContainer);
+  form.appendChild(formCommentsContainer);
+  form.appendChild(formSubmit);
+
+  container.appendChild(form);
+};
+
 /**
  * Create all reviews HTML and add them to the webpage.
  */
 fillReviewsHTML = (reviews = self.reviews) => {
   const container = document.getElementById('reviews-container');
   const title = document.createElement('h3');
-  title.innerHTML = 'Reviews';
+  title.innerHTML = 'Other Reviews';
   title.id = 'review-title';
   container.appendChild(title);
 
