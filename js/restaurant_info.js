@@ -167,7 +167,7 @@ fillOwnReviewHTML = (restaurantId) => {
 
   const formRatingLabel = document.createElement('label');
   formRatingLabel.classList.add('review-form-label');
-  formRatingLabel.setAttribute('for', 'name');
+  formRatingLabel.setAttribute('for', 'rating');
   formRatingLabel.innerHTML = 'Rating';
   formRatingContainer.appendChild(formRatingLabel);
 
@@ -193,7 +193,7 @@ fillOwnReviewHTML = (restaurantId) => {
 
   const formCommentsLabel = document.createElement('label');
   formCommentsLabel.classList.add('review-form-label');
-  formCommentsLabel.setAttribute('for', 'name');
+  formCommentsLabel.setAttribute('for', 'comments');
   formCommentsLabel.innerHTML = 'Comments';
   formCommentsContainer.appendChild(formCommentsLabel);
 
