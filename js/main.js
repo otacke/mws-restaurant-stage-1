@@ -6,8 +6,6 @@ let cuisines;
 var map;
 var markers = [];
 
-console.log(Math.random());
-
 /**
  * Fetch all neighborhoods and set their HTML.
  */

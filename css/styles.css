@@ -11,6 +11,25 @@ body {
   position: relative;
   min-width: 350px;
 }
+#toast {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 3em;
+  margin: auto;
+  width: 90%;
+  background: #252831;
+  color: #ffffff;
+  padding: 1em 1em;
+  text-align: center;
+  opacity: 0.9;
+  max-width: 1218px;
+  visibility: hidden;
+}
+#toast.visible {
+  visibility: visible;
+}
 ul, li {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1em;

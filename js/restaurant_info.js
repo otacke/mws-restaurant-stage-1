@@ -234,7 +234,6 @@ fillOwnReviewHTML = (restaurantId) => {
     DBHelper
       .postReview(review)
       .then(result => {
-        console.log(result);
         this.reviews.push(result);
         fillReviewsHTML();
       })

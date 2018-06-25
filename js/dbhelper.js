@@ -46,6 +46,56 @@ class DBHelper {
     return 'reviews';
   }
 
+  // Database name for reviews.
+  static get DBID_QUEUE () {
+    return 'restaurant-queue';
+  }
+
+  /**
+   * Add listeners.
+   * Not the best place in DBHelper ;-) Gotta clean up here anyway ...
+   */
+  static initListeners () {
+    // Add toast
+    const toast = document.createElement('div');
+    toast.setAttribute('id', 'toast');
+    toast.classList.add('toast');
+    toast.innerHTML = 'You\'re offline. If you post any reviews, they will be sent as soon as you are online again.';
+    if (!navigator.onLine) {
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible')
+      }, 3000);
+    }
+    document.body.appendChild(toast);
+
+    // If going online, empty the queue
+    window.addEventListener('online', () => {
+      if (!navigator.serviceWorker) {
+        return;
+      }
+      DBHelper.flushObjects(DBHelper.DBID_QUEUE);
+      // Database should be refreshed in case we missed something
+      DBHelper
+        .databaseRefetch(DBHelper.DBID_REVIEWS)
+        .then(() => {
+          location.reload();
+        });
+    });
+
+    // If going offline, show toast
+    window.addEventListener('offline', () => {
+      if (!navigator.serviceWorker) {
+        return;
+      }
+      const toast = document.getElementById('toast')
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible')
+      }, 3000);
+    });
+  }
+
   /**
    * Open IndexedDB.
    *
@@ -58,7 +108,7 @@ class DBHelper {
     }
 
     return idb.open(table, 1, upgradeDb => {
-      const foo = upgradeDb.createObjectStore(table, {keyPath: 'id'});
+      upgradeDb.createObjectStore(table, {keyPath: 'id', autoIncrement: true});
     });
   }
 
@@ -86,6 +136,48 @@ class DBHelper {
         return tx.complete;
       })
       .catch(error => console.error(`Could not write to db (${error}).`));
+  }
+
+  static databaseClear (dbTable) {
+    return DBHelper
+      .databaseOpen(dbTable)
+      .then(db => {
+        // Exit if no database present
+        if (!db) {
+          return;
+        }
+        const tx = db.transaction(dbTable, 'readwrite');
+        const store = tx.objectStore(dbTable);
+        store.clear();
+        return tx.complete;
+      })
+      .catch(error => console.error(`Could not clean db (${error}).`));
+  }
+
+  /**
+   * Refetch data from network.
+   *
+   * @param {string} dbTable - Database table.
+   */
+  static databaseRefetch (dbTable) {
+    return DBHelper
+      // Delete old data
+      .databaseClear(dbTable)
+      // get fresh data
+      .then(() => {
+        switch (dbTable) {
+          case DBHelper.DBID_REVIEWS:
+            DBHelper
+              .fetchReviews(() => {})
+              .then(() => true);
+            break;
+          case DBHelper.DBID_RESTAURANTS:
+            DBHelper
+            .fetchRestaurants(() => {})
+            .then(() => true);
+            break;
+        }
+      });
   }
 
   /**
@@ -380,16 +472,96 @@ class DBHelper {
    * @return {object} Response, will be completed review data or empty.
    */
   static postReview (review) {
-    // TODO: Add to Database
-    // Store for later if offline
-    return fetch(
-      DBHelper.DATABASE_URL_REVIEWS,
-      {
-        method: 'post',
-        body: JSON.stringify(review),
-        headers: new Headers({'Content-Type': 'application/json'})
-      })
-      .then(response => (response.ok) ? response.json() : [{}]);
+    // Add item to idb
+    DBHelper.databaseInsert ([review], DBHelper.DBID_REVIEWS);
+
+    // Push object to queue
+    DBHelper.pushObject(DBHelper.DBID_QUEUE, review);
+
+    // Empty queue if online, will be triggered as soon as online later, too.
+    if (navigator.onLine) {
+      DBHelper.flushObjects(DBHelper.DBID_QUEUE);
+    }
+    return Promise.resolve(review);
+  }
+
+  /**
+   * Push object to Storage queue.
+   *
+   * @param {string} key - Storage key.
+   * @param {object} value - Object.
+   */
+  static pushObject (key, value) {
+    const storageValue = DBHelper.retrieveObject(key);
+    if (storageValue === null) {
+      localStorage.setItem(key, JSON.stringify([value]));
+    }
+    else {
+      storageValue.push(value);
+      localStorage.setItem(key, JSON.stringify(storageValue));
+    }
+  }
+
+  /**
+   * Retrieve object from Storage queue.
+   *
+   * @param {string} key - Storage key.
+   */
+  static retrieveObject (key) {
+    const value = localStorage.getItem(key);
+    return value && JSON.parse(value);
+  }
+
+  /**
+   * Shift Storage queue.
+   *
+   * @param {string} key - Storage key.
+   */
+  static shiftObject (key) {
+    const storageValue = DBHelper.retrieveObject(key);
+    if (storageValue !== null) {
+      storageValue.shift();
+      localStorage.setItem(key, JSON.stringify(storageValue));
+    }
+  }
+
+  /**
+   * Post as many items from the queue as possible.
+   *
+   * Will post all items from the queue (LIFO) to the server and empty
+   * the queue. If an item cannot be sent, assume that the network is gone
+   * and stop posting.
+   *
+   * @param {string} key - Storage key.
+   */
+  static flushObjects (key) {
+    const storageValue = DBHelper.retrieveObject(key);
+    if (storageValue === null) {
+      return;
+    }
+
+    // Post as many items from queue as possible
+    storageValue.some(item => {
+      fetch(
+        DBHelper.DATABASE_URL_REVIEWS,
+        {
+          method: 'post',
+          body: JSON.stringify(item),
+          headers: new Headers({'Content-Type': 'application/json'})
+        })
+        .then(response => {
+          if (response.ok) {
+            // Remove sent item from DB
+            DBHelper.shiftObject(DBHelper.DBID_QUEUE);
+          }
+          else {
+            // Maybe network is gone again. Break.
+            return true;
+          }
+        });
+    });
   }
 
 }
+
+DBHelper.initListeners();
