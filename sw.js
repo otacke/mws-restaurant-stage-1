@@ -68,23 +68,6 @@
       .then(response => response || fetchFromNetwork(event.request))
     );
 
-    event.waitUntil(update(event.request));
-
-    /**
-     * Update data from network and store in cache.
-     * Will be slightly out of sync, but that's OK.
-     *
-     * @param {object} request - Request.
-     * @return {object} Response for fetch request.
-     */
-    function update(request) {
-      return caches
-        .open(CACHE_NAME)
-        .then(cache => fetch(request)
-          .then(response => cache.put(request, response))
-      );
-    }
-
     /**
      * Fetch data from network and store in cache
      *

@@ -244,6 +244,33 @@ fillOwnReviewHTML = (restaurantId) => {
     this.form.reset();
 
   });
+
+  // Fav Button
+  this.favButton = document.createElement('button');
+  this.favButton.classList.add('fav-toggle');
+  updateFavButton(self.restaurant.is_favorite);
+  this.favButton.addEventListener('click', () => {
+    self.restaurant.is_favorite = !self.restaurant.is_favorite;
+    DBHelper.toggleFav(self.restaurant);
+    updateFavButton(self.restaurant.is_favorite);
+  });
+  container.appendChild(favButton);
+};
+
+/**
+ * Update FavButton.
+ *
+ * @param {boolean} fav - True, if liked.
+ */
+updateFavButton = (fav) => {
+  if (fav === true) {
+    this.favButton.classList.add('fav-true');
+    this.favButton.innerHTML = 'You LIKE this restaurant!';
+  }
+  else {
+    this.favButton.classList.remove('fav-true');
+    this.favButton.innerHTML = 'You do NOT like this restaurant.';
+  }
 };
 
 /**

@@ -47,6 +47,11 @@ class DBHelper {
   }
 
   // Database name for reviews.
+  static get DBID_FAVS () {
+    return 'favs';
+  }
+
+  // Database name for reviews.
   static get DBID_QUEUE () {
     return 'restaurant-queue';
   }
@@ -76,11 +81,7 @@ class DBHelper {
       }
       DBHelper.flushObjects(DBHelper.DBID_QUEUE);
       // Database should be refreshed in case we missed something
-      DBHelper
-        .databaseRefetch(DBHelper.DBID_REVIEWS)
-        .then(() => {
-          location.reload();
-        });
+      location.reload();
     });
 
     // If going offline, show toast
@@ -469,20 +470,36 @@ class DBHelper {
    * Post review.
    *
    * @param {object} review - Review.
-   * @return {object} Response, will be completed review data or empty.
+   * @return {object} Response.
    */
   static postReview (review) {
     // Add item to idb
-    DBHelper.databaseInsert ([review], DBHelper.DBID_REVIEWS);
+    DBHelper.databaseInsert([review], DBHelper.DBID_REVIEWS);
 
     // Push object to queue
-    DBHelper.pushObject(DBHelper.DBID_QUEUE, review);
+    DBHelper.pushObject(DBHelper.DBID_QUEUE, {type: DBHelper.DBID_REVIEWS, data: review});
 
     // Empty queue if online, will be triggered as soon as online later, too.
     if (navigator.onLine) {
       DBHelper.flushObjects(DBHelper.DBID_QUEUE);
     }
     return Promise.resolve(review);
+  }
+
+  /**
+   * Post review.
+   *
+   * @param {integer} id - Restaurant Id.
+   * @param {boolean} like - Like or not.
+   * @return {object} Response.
+   */
+  static toggleFav (restaurant) {
+    DBHelper.databaseInsert([restaurant], DBHelper.DBID_RESTAURANTS);
+    DBHelper.pushObject(DBHelper.DBID_QUEUE, {type: DBHelper.DBID_FAVS, data: restaurant});
+    if (navigator.onLine) {
+      DBHelper.flushObjects(DBHelper.DBID_QUEUE);
+    }
+    return Promise.resolve(restaurant);
   }
 
   /**
@@ -542,23 +559,45 @@ class DBHelper {
 
     // Post as many items from queue as possible
     storageValue.some(item => {
-      fetch(
-        DBHelper.DATABASE_URL_REVIEWS,
-        {
-          method: 'post',
-          body: JSON.stringify(item),
-          headers: new Headers({'Content-Type': 'application/json'})
-        })
-        .then(response => {
-          if (response.ok) {
-            // Remove sent item from DB
-            DBHelper.shiftObject(DBHelper.DBID_QUEUE);
-          }
-          else {
-            // Maybe network is gone again. Break.
-            return true;
-          }
-        });
+      switch (item.type) {
+        case DBHelper.DBID_REVIEWS:
+          fetch(
+            DBHelper.DATABASE_URL_REVIEWS,
+            {
+              method: 'post',
+              body: JSON.stringify(item.data),
+              headers: new Headers({'Content-Type': 'application/json'})
+            })
+            .then(response => {
+              if (response.ok) {
+                // Remove sent item from DB
+                DBHelper.shiftObject(DBHelper.DBID_QUEUE);
+              }
+              else {
+                // Maybe network is gone again. Break.
+                return true;
+              }
+            });
+          break;
+
+        case DBHelper.DBID_FAVS:
+          fetch(
+            `${DBHelper.DATABASE_URL_RESTAURANTS}/${item.data.id}/?is_favorite=${item.data.is_favorite}`,
+            {
+              method: 'put',
+            })
+            .then(response => {
+              if (response.ok) {
+                // Remove sent item from DB
+                DBHelper.shiftObject(DBHelper.DBID_QUEUE);
+              }
+              else {
+                // Maybe network is gone again. Break.
+                return true;
+              }
+            });
+          break;
+      }
     });
   }
 

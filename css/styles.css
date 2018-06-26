@@ -399,6 +399,13 @@ nav h1 a {
   overflow: auto;
   text-overflow: inherit;
 }
+.fav-toggle {
+  background: #ffdddd;
+  color: #000000;
+}
+.fav-toggle.fav-true {
+  background: #ccffcc;
+}
 /* ====================== Media Queries: Main ====================== */
 
 @media screen and (min-width: 500px) {
