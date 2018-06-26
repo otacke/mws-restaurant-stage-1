@@ -21,7 +21,7 @@
     'img/undefined.webp', 'img/undefined_280w.webp', 'img/undefined_480w.webp',
     'index.html',
     'restaurant.html',
-    'js/dbhelper.js',
+    'js/dbhelper.min.js',
     'js/main.min.js',
     'js/idb.min.js',
     'js/restaurant_info.min.js',
